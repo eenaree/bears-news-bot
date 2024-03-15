@@ -9,10 +9,20 @@ const TELEGRAM_CHAT_ID = env.TELEGRAM_CHAT_ID;
 app();
 
 async function app() {
-  const newsList = await fetchBaseballTeamNews('OB');
-  const prevHour = new Date().getHours() - 1;
+  let newsList: News[] = [];
+  const today = new Date();
+  const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+  const hour = today.getHours();
+
+  // 자정에 실행되는 경우
+  if (hour === 0) {
+    newsList = await fetchBaseballTeamNewsByDate('OB', formatDate(yesterday));
+  } else {
+    newsList = await fetchBaseballTeamNewsByDate('OB', formatDate(today));
+  }
 
   const pastHourNewsList = newsList.filter((news) => {
+    const prevHour = hour === 0 ? 23 : hour - 1;
     const newsPublishedHour = new Date(news.datetime).getHours();
     return prevHour === newsPublishedHour;
   });
@@ -22,15 +32,7 @@ async function app() {
   notifyNewsList(pastHourNewsListAsc);
 }
 
-async function fetchBaseballTeamNews(team: string) {
-  const today = new Date();
-  const year = today.getFullYear();
-  const month = today.getMonth() + 1;
-  const day = today.getDate();
-  const dateString = `${year}${month.toString().padStart(2, '0')}${day
-    .toString()
-    .padStart(2, '0')}`;
-
+async function fetchBaseballTeamNewsByDate(team: string, date: string) {
   try {
     const { data } = await axios.get<{ list: News[] }>(
       'https://sports.news.naver.com/kbaseball/news/list',
@@ -39,7 +41,7 @@ async function fetchBaseballTeamNews(team: string) {
           type: 'team',
           team,
           isphoto: 'N',
-          date: dateString,
+          date,
         },
       }
     );
@@ -64,4 +66,11 @@ async function notifyNewsList(newsList: News[]) {
   } catch (error) {
     throw new Error(`Failed to notify news list: ${error}`);
   }
+}
+
+function formatDate(date: Date) {
+  const year = date.getFullYear();
+  const month = date.getMonth() + 1;
+  const day = date.getDate();
+  return `${year}${month.toString().padStart(2, '0')}${day.toString().padStart(2, '0')}`;
 }
