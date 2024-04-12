@@ -1,53 +1,63 @@
-import { env } from 'node:process';
-import axios from 'axios';
-import 'dotenv/config.js';
-import { News } from './type.ts';
+import { News, ResponseData } from './type';
 
-const TELEGRAM_BOT_TOKEN = env.TELEGRAM_BOT_TOKEN;
-const TELEGRAM_CHAT_ID = env.TELEGRAM_CHAT_ID;
-
-app();
+const TELEGRAM_BOT_TOKEN = '[TELEGRAM BOT TOKEN]';
+const TELEGRAM_CHAT_ID = '[TELEGRAM_CHAT_ID]';
+const MYTEAM: keyof typeof KBO_TEAM = 'OB';
+const KBO_TEAM = {
+  OB: '두산',
+  KT: 'KT',
+  SK: 'SSG',
+  LG: 'LG',
+  NC: 'NC',
+  HT: 'KIA',
+  HH: '한화',
+  LT: '롯데',
+  WO: '키움',
+  SS: '삼성',
+} as const;
 
 async function app() {
-  let newsList: News[] = [];
-  const today = new Date();
-  const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
-  const hour = today.getHours();
-
-  // 자정에 실행되는 경우
-  if (hour === 0) {
-    newsList = await fetchBaseballTeamNewsByDate('OB', formatDate(yesterday));
-  } else {
-    newsList = await fetchBaseballTeamNewsByDate('OB', formatDate(today));
+  if (!KBO_TEAM[MYTEAM]) {
+    Logger.log('현재 선택한 야구팀이 없습니다. 팀을 선택해주세요.');
+    return;
   }
 
-  const pastHourNewsList = newsList.filter((news) => {
-    const prevHour = hour === 0 ? 23 : hour - 1;
-    const newsPublishedHour = new Date(news.datetime).getHours();
-    return prevHour === newsPublishedHour;
-  });
+  const today = new Date();
+  const hour = today.getHours();
+  const minute = today.getMinutes();
+  const scriptProperties = PropertiesService.getScriptProperties();
+  const lastUpdateNewsTime =
+    scriptProperties.getProperty('LAST_UPDATE_NEWS_TIME') ||
+    `${formatDate(today)} ${hour}:${minute}`;
+  const newsList = await fetchBaseballTeamNews(MYTEAM);
 
-  const pastHourNewsListAsc = pastHourNewsList.reverse();
-
-  notifyNewsList(pastHourNewsListAsc);
+  if (newsList) {
+    const latestNewsList = newsList.filter(
+      (news) => new Date(lastUpdateNewsTime) < new Date(news.datetime)
+    );
+    if (latestNewsList.length > 0) {
+      scriptProperties.setProperty('LAST_UPDATE_NEWS_TIME', latestNewsList[0].datetime);
+      const latestNewsListAsc = latestNewsList.reverse();
+      notifyNewsList(latestNewsListAsc);
+    } else {
+      scriptProperties.setProperty('LAST_UPDATE_NEWS_TIME', newsList[0].datetime);
+      Logger.log(`${lastUpdateNewsTime} 이후, 최신 뉴스가 없습니다. `);
+    }
+  }
 }
 
-async function fetchBaseballTeamNewsByDate(team: string, date: string) {
+async function fetchBaseballTeamNews(team: keyof typeof KBO_TEAM) {
   try {
-    const { data } = await axios.get<{ list: News[] }>(
-      'https://sports.news.naver.com/kbaseball/news/list',
-      {
-        params: {
-          type: 'team',
-          team,
-          isphoto: 'N',
-          date,
-        },
-      }
-    );
-    return data.list;
+    const url = `https://sports.news.naver.com/kbaseball/news/list?type=team&team=${team}&isphoto=N`;
+    const response = UrlFetchApp.fetch(url, {
+      contentType: 'application/json',
+    });
+    const data = JSON.parse(response.getContentText());
+    if (isResponseData(data)) {
+      return data.list;
+    }
   } catch (error) {
-    throw new Error(`Failed to fetch ${team} news: ${error}`);
+    Logger.log('뉴스 데이터를 가져오지 못했습니다.');
   }
 }
 
@@ -55,16 +65,17 @@ async function notifyNewsList(newsList: News[]) {
   try {
     for (const news of newsList) {
       const newsLink = `https://sports.news.naver.com/kbaseball/news/read?oid=${news.oid}&aid=${news.aid}`;
-
-      await axios.get(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-        params: {
-          chat_id: TELEGRAM_CHAT_ID,
+      const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+      const params = {
+        payload: {
+          chat_id: `${TELEGRAM_CHAT_ID}`,
           text: `[${news.officeName}] ${news.title}\n- 조회수: ${news.totalCount}\n\n${newsLink}`,
         },
-      });
+      };
+      UrlFetchApp.fetch(url, params);
     }
   } catch (error) {
-    throw new Error(`Failed to notify news list: ${error}`);
+    Logger.log('뉴스를 전송하는데 실패했습니다.');
   }
 }
 
@@ -72,5 +83,21 @@ function formatDate(date: Date) {
   const year = date.getFullYear();
   const month = date.getMonth() + 1;
   const day = date.getDate();
-  return `${year}${month.toString().padStart(2, '0')}${day.toString().padStart(2, '0')}`;
+  return `${year}.${month.toString().padStart(2, '0')}.${day.toString().padStart(2, '0')}`;
+}
+
+function isResponseData(data: unknown): data is ResponseData {
+  if (
+    typeof data === 'object' &&
+    data !== null &&
+    'list' in data &&
+    'date' in data &&
+    'type' in data &&
+    'page' in data &&
+    'totalPages' in data
+  ) {
+    return true;
+  } else {
+    return false;
+  }
 }
