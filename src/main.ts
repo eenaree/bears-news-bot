@@ -41,7 +41,7 @@ async function app() {
       notifyNewsList(latestNewsListAsc);
     } else {
       scriptProperties.setProperty('LAST_UPDATE_NEWS_TIME', newsList[0].datetime);
-      Logger.log(`${lastUpdateNewsTime} 이후, 최신 뉴스가 없습니다. `);
+      Logger.log(`${newsList[0].datetime} 이후, 최신 뉴스가 없습니다. `);
     }
   }
 }
