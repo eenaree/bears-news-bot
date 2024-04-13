@@ -16,7 +16,7 @@ const KBO_TEAM = {
   SS: '삼성',
 } as const;
 
-async function app() {
+function app() {
   if (!KBO_TEAM[MYTEAM]) {
     Logger.log('현재 선택한 야구팀이 없습니다. 팀을 선택해주세요.');
     return;
@@ -29,7 +29,7 @@ async function app() {
   const lastUpdateNewsTime =
     scriptProperties.getProperty('LAST_UPDATE_NEWS_TIME') ||
     `${formatDate(today)} ${hour}:${minute}`;
-  const newsList = await fetchBaseballTeamNews(MYTEAM);
+  const newsList = fetchBaseballTeamNews(MYTEAM);
 
   if (newsList) {
     const latestNewsList = newsList.filter(
@@ -46,7 +46,7 @@ async function app() {
   }
 }
 
-async function fetchBaseballTeamNews(team: keyof typeof KBO_TEAM) {
+function fetchBaseballTeamNews(team: keyof typeof KBO_TEAM) {
   try {
     const url = `https://sports.news.naver.com/kbaseball/news/list?type=team&team=${team}&isphoto=N`;
     const response = UrlFetchApp.fetch(url, {
@@ -61,7 +61,7 @@ async function fetchBaseballTeamNews(team: keyof typeof KBO_TEAM) {
   }
 }
 
-async function notifyNewsList(newsList: News[]) {
+function notifyNewsList(newsList: News[]) {
   try {
     for (const news of newsList) {
       const newsLink = `https://sports.news.naver.com/kbaseball/news/read?oid=${news.oid}&aid=${news.aid}`;
