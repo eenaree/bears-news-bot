@@ -25,10 +25,7 @@ function app() {
   const today = new Date();
   const hour = today.getHours();
   const minute = today.getMinutes();
-  const scriptProperties = PropertiesService.getScriptProperties();
-  const lastUpdateNewsTime =
-    scriptProperties.getProperty('LAST_UPDATE_NEWS_TIME') ||
-    `${formatDate(today)} ${hour}:${minute}`;
+  const lastUpdateNewsTime = getLastUpdateNewsTime() || `${formatDate(today)} ${hour}:${minute}`;
   const newsList = fetchBaseballTeamNews(MYTEAM);
 
   if (newsList) {
@@ -36,14 +33,22 @@ function app() {
       (news) => new Date(lastUpdateNewsTime) < new Date(news.datetime)
     );
     if (latestNewsList.length > 0) {
-      scriptProperties.setProperty('LAST_UPDATE_NEWS_TIME', latestNewsList[0].datetime);
+      setLastUpdateNewsTime(latestNewsList[0].datetime);
       const latestNewsListAsc = latestNewsList.reverse();
       notifyNewsList(latestNewsListAsc);
     } else {
-      scriptProperties.setProperty('LAST_UPDATE_NEWS_TIME', newsList[0].datetime);
+      setLastUpdateNewsTime(newsList[0].datetime);
       Logger.log(`${newsList[0].datetime} 이후, 최신 뉴스가 없습니다. `);
     }
   }
+}
+
+function getLastUpdateNewsTime() {
+  return PropertiesService.getScriptProperties().getProperty('LAST_UPDATE_NEWS_TIME');
+}
+
+function setLastUpdateNewsTime(value: string) {
+  PropertiesService.getScriptProperties().setProperty('LAST_UPDATE_NEWS_TIME', value);
 }
 
 function fetchBaseballTeamNews(team: keyof typeof KBO_TEAM) {
