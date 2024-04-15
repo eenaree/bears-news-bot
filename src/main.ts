@@ -63,24 +63,30 @@ function fetchBaseballTeamNews(team: keyof typeof KBO_TEAM) {
     }
   } catch (error) {
     Logger.log('뉴스 데이터를 가져오지 못했습니다.');
+    Logger.log(error);
   }
 }
 
 function notifyNewsList(newsList: News[]) {
+  for (const news of newsList) {
+    const newsLink = `https://sports.news.naver.com/kbaseball/news/read?oid=${news.oid}&aid=${news.aid}`;
+    sendMessage(newsLink);
+  }
+}
+
+function sendMessage(message: string) {
   try {
-    for (const news of newsList) {
-      const newsLink = `https://sports.news.naver.com/kbaseball/news/read?oid=${news.oid}&aid=${news.aid}`;
-      const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-      const params = {
-        payload: {
-          chat_id: `${TELEGRAM_CHAT_ID}`,
-          text: `[${news.officeName}] ${news.title}\n- 조회수: ${news.totalCount}\n\n${newsLink}`,
-        },
-      };
-      UrlFetchApp.fetch(url, params);
-    }
+    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+    const params = {
+      payload: {
+        chat_id: `${TELEGRAM_CHAT_ID}`,
+        text: message,
+      },
+    };
+    UrlFetchApp.fetch(url, params);
   } catch (error) {
-    Logger.log('뉴스를 전송하는데 실패했습니다.');
+    Logger.log('텔레그램 메세지를 전송하는데 실패했습니다');
+    Logger.log(error);
   }
 }
 
