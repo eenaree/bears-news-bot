@@ -63,6 +63,7 @@ function fetchBaseballTeamNews(team: keyof typeof KBO_TEAM) {
     }
   } catch (error) {
     Logger.log('뉴스 데이터를 가져오지 못했습니다.');
+    Logger.log(error);
   }
 }
 
@@ -87,6 +88,7 @@ function sendMessage(message: string) {
     UrlFetchApp.fetch(url, params);
   } catch (error) {
     Logger.log('텔레그램 메세지를 전송하는데 실패했습니다.');
+    Logger.log(error);
   }
 }
 
