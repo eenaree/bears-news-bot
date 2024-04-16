@@ -22,11 +22,15 @@ function app() {
     return;
   }
 
-  const today = new Date();
-  const hour = today.getHours();
-  const minute = today.getMinutes();
-  const lastUpdateNewsTime = getLastUpdateNewsTime() || `${formatDate(today)} ${hour}:${minute}`;
+  const lastUpdateNewsTime = getLastUpdateNewsTime();
   const newsList = fetchBaseballTeamNews(MYTEAM);
+
+  if (!lastUpdateNewsTime) {
+    Logger.log('네이버 스포츠 뉴스봇의 초기 설정 중입니다.');
+    setLastUpdateNewsTime(Utilities.formatDate(new Date(), 'GMT+9', 'yyyy.MM.dd HH:mm'));
+    ScriptApp.newTrigger('app').timeBased().everyMinutes(15).create();
+    return;
+  }
 
   if (newsList) {
     const latestNewsList = newsList.filter(
@@ -90,13 +94,6 @@ function sendMessage(message: string) {
     Logger.log('텔레그램 메세지를 전송하는데 실패했습니다.');
     Logger.log(error);
   }
-}
-
-function formatDate(date: Date) {
-  const year = date.getFullYear();
-  const month = date.getMonth() + 1;
-  const day = date.getDate();
-  return `${year}.${month.toString().padStart(2, '0')}.${day.toString().padStart(2, '0')}`;
 }
 
 function isResponseData(data: unknown): data is ResponseData {
