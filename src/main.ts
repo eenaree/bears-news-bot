@@ -1,5 +1,6 @@
 import { News, ResponseData } from './type';
 
+const DEBUG_MODE = false;
 const TELEGRAM_BOT_TOKEN = '[TELEGRAM BOT TOKEN]';
 const TELEGRAM_CHAT_ID = '[TELEGRAM_CHAT_ID]';
 const MYTEAM: keyof typeof KBO_TEAM = 'OB';
@@ -33,18 +34,29 @@ function app() {
   }
 
   if (newsList) {
-    const latestNewsList = newsList.filter(
-      (news) => new Date(lastUpdateNewsTime) < new Date(news.datetime)
-    );
-    if (latestNewsList.length > 0) {
-      setLastUpdateNewsTime(latestNewsList[0].datetime);
-      const latestNewsListAsc = latestNewsList.reverse();
-      notifyNewsList(latestNewsListAsc);
+    const latestNewsListAsc = getLatestNewsList(newsList, lastUpdateNewsTime).reverse();
+    if (latestNewsListAsc.length > 0) {
+      Logger.log(`최신 뉴스: ${latestNewsListAsc.length}개 `);
+
+      if (DEBUG_MODE) {
+        latestNewsListAsc.forEach((news) => {
+          Logger.log(
+            `[${news.officeName}] ${news.title}\n${news.subContent}\n- 입력: ${news.datetime}\n- 조회수: ${news.totalCount}`
+          );
+        });
+      } else {
+        notifyNewsList(latestNewsListAsc);
+        setLastUpdateNewsTime(latestNewsListAsc[latestNewsListAsc.length - 1].datetime);
+        Logger.log('최신 뉴스 항목을 모두 전달했습니다.');
+      }
     } else {
-      setLastUpdateNewsTime(newsList[0].datetime);
-      Logger.log(`${newsList[0].datetime} 이후, 최신 뉴스가 없습니다. `);
+      Logger.log(`${lastUpdateNewsTime} 이후, 최신 뉴스가 없습니다. `);
     }
   }
+}
+
+function getLatestNewsList(newsList: News[], lastUpdateNewsTime: string) {
+  return newsList.filter((news) => new Date(lastUpdateNewsTime) < new Date(news.datetime));
 }
 
 function getLastUpdateNewsTime() {
@@ -75,6 +87,7 @@ function notifyNewsList(newsList: News[]) {
   for (const news of newsList) {
     const newsLink = `https://sports.news.naver.com/kbaseball/news/read?oid=${news.oid}&aid=${news.aid}`;
     const message = `[${news.officeName}] ${news.title}\n- 조회수: ${news.totalCount}\n\n${newsLink}`;
+    Logger.log(`'${news.title}' 항목 게시중...`);
     sendMessage(message);
   }
 }
