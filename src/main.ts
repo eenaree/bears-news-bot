@@ -46,7 +46,6 @@ function app() {
         });
       } else {
         notifyNewsList(latestNewsListAsc);
-        setLastUpdateNewsTime(latestNewsListAsc[latestNewsListAsc.length - 1].datetime);
         Logger.log('최신 뉴스 항목을 모두 전달했습니다.');
       }
     } else {
@@ -89,6 +88,7 @@ function notifyNewsList(newsList: News[]) {
     const message = `[${news.officeName}] ${news.title}\n- 조회수: ${news.totalCount}\n\n${newsLink}`;
     Logger.log(`'${news.title}' 항목 게시중...`);
     sendMessage(message);
+    setLastUpdateNewsTime(news.datetime);
   }
 }
 
