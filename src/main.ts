@@ -104,8 +104,8 @@ function sendMessage(message: string) {
     };
     UrlFetchApp.fetch(url, params);
   } catch (error) {
-    Logger.log('텔레그램 메세지를 전송하는데 실패했습니다.');
     Logger.log(error);
+    throw new Error('텔레그램 메세지를 전송하는데 실패했습니다.');
   }
 }
 
