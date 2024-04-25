@@ -1,6 +1,6 @@
 {
   "name": "naver-bears-news-bot",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "description": "",
   "main": "index.js",
   "scripts": {
