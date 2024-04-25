@@ -41,7 +41,9 @@ function app() {
       if (DEBUG_MODE) {
         latestNewsListAsc.forEach((news) => {
           Logger.log(
-            `[${news.officeName}] ${news.title}\n${news.subContent}\n- 입력: ${news.datetime}\n- 조회수: ${news.totalCount}`
+            `[${news.officeName.trim()}] ${news.title}\n${news.subContent}\n- 입력: ${
+              news.datetime
+            }\n- 조회수: ${news.totalCount}`
           );
         });
       } else {
@@ -85,7 +87,9 @@ function fetchBaseballTeamNews(team: keyof typeof KBO_TEAM) {
 function notifyNewsList(newsList: News[]) {
   for (const news of newsList) {
     const newsLink = `https://sports.news.naver.com/kbaseball/news/read?oid=${news.oid}&aid=${news.aid}`;
-    const message = `[${news.officeName}] ${news.title}\n- 조회수: ${news.totalCount}\n\n${newsLink}`;
+    const message = `[${news.officeName.trim()}] ${news.title}\n- 조회수: ${
+      news.totalCount
+    }\n\n${newsLink}`;
     Logger.log(`'${news.title}' 항목 게시중...`);
     sendMessage(message);
     setLastUpdateNewsTime(news.datetime);
