@@ -84,13 +84,34 @@ function fetchBaseballTeamNews(team: keyof typeof KBO_TEAM) {
   }
 }
 
+function createNewsCardText({
+  officeName,
+  title,
+  totalCount,
+  url,
+}: {
+  officeName: string;
+  title: string;
+  totalCount: number;
+  url: string;
+}) {
+  return `[${officeName.trim()}] ${title}\n- 조회수: ${totalCount}\n\n${url}`;
+}
+
+function createNewsUrl({ officeId, articleId }: { officeId: string; articleId: string }) {
+  return `https://sports.news.naver.com/kbaseball/news/read?oid=${officeId}&aid=${articleId}`;
+}
+
 function notifyNewsList(newsList: News[]) {
   for (const news of newsList) {
-    const newsLink = `https://sports.news.naver.com/kbaseball/news/read?oid=${news.oid}&aid=${news.aid}`;
-    const message = `[${news.officeName.trim()}] ${news.title}\n- 조회수: ${
-      news.totalCount
-    }\n\n${newsLink}`;
     Logger.log(`'${news.title}' 항목 게시중...`);
+    const newsUrl = news.url ?? createNewsUrl({ officeId: news.oid, articleId: news.aid });
+    const message = createNewsCardText({
+      officeName: news.officeName,
+      title: news.title,
+      totalCount: news.totalCount,
+      url: newsUrl,
+    });
     sendMessage(message);
     setLastUpdateNewsTime(news.datetime);
   }
