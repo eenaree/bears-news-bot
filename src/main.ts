@@ -79,8 +79,8 @@ function fetchBaseballTeamNews(team: keyof typeof KBO_TEAM) {
       return data.list;
     }
   } catch (error) {
-    Logger.log('뉴스 데이터를 가져오지 못했습니다.');
     Logger.log(error);
+    throw new Error('뉴스 데이터를 가져오는 도중 에러가 발생했습니다.');
   }
 }
 
