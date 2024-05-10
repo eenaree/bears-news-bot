@@ -99,7 +99,7 @@ function createNewsCardText({
 }
 
 function createNewsUrl({ officeId, articleId }: { officeId: string; articleId: string }) {
-  return `https://sports.news.naver.com/kbaseball/news/read?oid=${officeId}&aid=${articleId}`;
+  return `https://m.sports.naver.com/kbaseball/article/${officeId}/${articleId}`;
 }
 
 function notifyNewsList(newsList: News[]) {
