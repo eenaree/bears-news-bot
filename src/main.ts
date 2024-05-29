@@ -34,7 +34,7 @@ function app() {
   }
 
   if (newsList) {
-    const latestNewsListAsc = getLatestNewsList(newsList, lastUpdateNewsTime).reverse();
+    const latestNewsListAsc = getLatestNewsList(newsList.reverse(), lastUpdateNewsTime);
     if (latestNewsListAsc.length > 0) {
       Logger.log(`최신 뉴스: ${latestNewsListAsc.length}개 `);
 
@@ -57,6 +57,15 @@ function app() {
 }
 
 function getLatestNewsList(newsList: News[], lastUpdateNewsTime: string) {
+  const lastUpdateNewsOid = getLastUpdateNewsOid();
+  const lastUpdateNewsAid = getLastUpdateNewsAid();
+
+  const lastUpdateNewsIndex = newsList.findIndex(
+    (news) => news.oid === lastUpdateNewsOid && news.aid === lastUpdateNewsAid
+  );
+  if (lastUpdateNewsIndex !== -1) {
+    return newsList.slice(lastUpdateNewsIndex + 1);
+  }
   return newsList.filter((news) => new Date(lastUpdateNewsTime) < new Date(news.datetime));
 }
 
@@ -66,6 +75,22 @@ function getLastUpdateNewsTime() {
 
 function setLastUpdateNewsTime(value: string) {
   PropertiesService.getScriptProperties().setProperty('LAST_UPDATE_NEWS_TIME', value);
+}
+
+function getLastUpdateNewsOid() {
+  return PropertiesService.getScriptProperties().getProperty('LAST_UPDATE_NEWS_OID');
+}
+
+function getLastUpdateNewsAid() {
+  return PropertiesService.getScriptProperties().getProperty('LAST_UPDATE_NEWS_AID');
+}
+
+function setLastUpdateNewsOid(value: string) {
+  return PropertiesService.getScriptProperties().setProperty('LAST_UPDATE_NEWS_OID', value);
+}
+
+function setLastUpdateNewsAid(value: string) {
+  return PropertiesService.getScriptProperties().setProperty('LAST_UPDATE_NEWS_AID', value);
 }
 
 function fetchBaseballTeamNews(team: keyof typeof KBO_TEAM) {
@@ -114,6 +139,8 @@ function notifyNewsList(newsList: News[]) {
     });
     sendMessage(message);
     setLastUpdateNewsTime(news.datetime);
+    setLastUpdateNewsOid(news.oid);
+    setLastUpdateNewsAid(news.aid);
   }
 }
 
