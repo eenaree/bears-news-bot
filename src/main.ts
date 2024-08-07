@@ -29,7 +29,19 @@ function app() {
   if (!lastUpdateNewsTime) {
     Logger.log('네이버 스포츠 뉴스봇의 초기 설정 중입니다.');
     setLastUpdateNewsTime(Utilities.formatDate(new Date(), 'GMT+9', 'yyyy.MM.dd HH:mm'));
-    ScriptApp.newTrigger('app').timeBased().everyMinutes(15).create();
+    let hasTrigger = false;
+    const triggers = ScriptApp.getProjectTriggers();
+    for (let i = 0; i < triggers.length; i++) {
+      if (triggers[i].getHandlerFunction() === 'app') {
+        Logger.log('app 트리거가 이미 존재합니다.');
+        hasTrigger = true;
+        break;
+      }
+    }
+    if (!hasTrigger) {
+      Logger.log('app 트리거를 생성합니다.');
+      ScriptApp.newTrigger('app').timeBased().everyMinutes(5).create();
+    }
     return;
   }
 
