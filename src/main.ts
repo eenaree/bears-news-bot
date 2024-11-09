@@ -180,17 +180,14 @@ function sendMessage(message: string) {
 }
 
 function isResponseData(data: unknown): data is ResponseData {
-  if (
-    typeof data === 'object' &&
-    data !== null &&
-    'list' in data &&
-    'date' in data &&
-    'type' in data &&
-    'page' in data &&
-    'totalPages' in data
-  ) {
+  if (typeof data === 'object' &&
+      data !== null &&
+      'list' in data &&
+      'date' in data &&
+      'type' in data &&
+      'page' in data &&
+      'totalPages' in data) {
     return true;
-  } else {
-    return false;
   }
+  return false;
 }
