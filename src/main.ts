@@ -29,15 +29,7 @@ function app() {
   if (!lastUpdateNewsTime) {
     Logger.log('네이버 스포츠 뉴스봇의 초기 설정 중입니다.');
     setLastUpdateNewsTime(Utilities.formatDate(new Date(), 'GMT+9', 'yyyy.MM.dd HH:mm'));
-    let hasTrigger = false;
-    const triggers = ScriptApp.getProjectTriggers();
-    for (let i = 0; i < triggers.length; i++) {
-      if (triggers[i].getHandlerFunction() === 'app') {
-        Logger.log('app 트리거가 이미 존재합니다.');
-        hasTrigger = true;
-        break;
-      }
-    }
+    const hasTrigger = checkTriggerExists('app');
     if (!hasTrigger) {
       Logger.log('app 트리거를 생성합니다.');
       ScriptApp.newTrigger('app').timeBased().everyMinutes(5).create();
@@ -66,6 +58,20 @@ function app() {
       Logger.log(`${lastUpdateNewsTime} 이후, 최신 뉴스가 없습니다. `);
     }
   }
+}
+
+function checkTriggerExists(triggerName: string) {
+  let hasTrigger = false;
+  const triggers = ScriptApp.getProjectTriggers();
+  for (let i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === triggerName) {
+      Logger.log(`${triggerName} 트리거가 이미 존재합니다.`);
+      hasTrigger = true;
+      break;
+    }
+  }
+
+  return hasTrigger;
 }
 
 function getLatestNewsList(newsList: News[], lastUpdateNewsTime: string) {
