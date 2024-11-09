@@ -1,25 +1,32 @@
-lockfileVersion: '6.0'
+lockfileVersion: '9.0'
 
 settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
-devDependencies:
-  '@types/google-apps-script':
-    specifier: ^1.0.83
-    version: 1.0.83
-  typescript:
-    specifier: ^5.4.2
-    version: 5.4.2
+importers:
+
+  .:
+    devDependencies:
+      '@types/google-apps-script':
+        specifier: ^1.0.83
+        version: 1.0.83
+      typescript:
+        specifier: ^5.4.2
+        version: 5.4.2
 
 packages:
 
-  /@types/google-apps-script@1.0.83:
+  '@types/google-apps-script@1.0.83':
     resolution: {integrity: sha512-o+QNeNZxPAfYHzRiLHjub9qF0IILg21r9MzYlnrIHUT+/wcC70aqDfedmzKTgtzsj79zvoTZD0cjGgy46+1Ynw==}
-    dev: true
 
-  /typescript@5.4.2:
+  typescript@5.4.2:
     resolution: {integrity: sha512-+2/g0Fds1ERlP6JsakQQDXjZdZMM+rqpamFZJEKh4kwTIn3iDkgKtby0CeNd5ATNZ4Ry1ax15TMx0W2V+miizQ==}
     engines: {node: '>=14.17'}
     hasBin: true
-    dev: true
+
+snapshots:
+
+  '@types/google-apps-script@1.0.83': {}
+
+  typescript@5.4.2: {}
