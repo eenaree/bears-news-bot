@@ -155,14 +155,14 @@ function notifyNewsList(newsList: News[]) {
       totalCount: news.totalCount,
       url: newsUrl,
     });
-    sendMessage(message);
+    sendMessage(message, newsUrl);
     setLastUpdateNewsTime(news.datetime);
     setLastUpdateNewsOid(news.oid);
     setLastUpdateNewsAid(news.aid);
   }
 }
 
-function sendMessage(message: string) {
+function sendMessage(message: string, link: string) {
   try {
     const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
     const params: GoogleAppsScript.URL_Fetch.URLFetchRequestOptions = {
@@ -170,6 +170,7 @@ function sendMessage(message: string) {
       payload: {
         chat_id: `${TELEGRAM_CHAT_ID}`,
         text: message,
+        link_preview_options: JSON.stringify({ url: link, prefer_small_media: true }),
       },
     };
     UrlFetchApp.fetch(url, params);
