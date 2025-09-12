@@ -27,10 +27,10 @@ function app() {
   const newsList = fetchBaseballTeamNews(MYTEAM);
 
   if (!lastUpdateNewsTime) {
-    Logger.log('네이버 스포츠 뉴스봇의 초기 설정 중입니다.');
-    setLastUpdateNewsTime(Utilities.formatDate(new Date(), 'GMT+9', 'yyyy.MM.dd HH:mm'));
     const hasTrigger = checkTriggerExists('app');
     if (!hasTrigger) {
+      Logger.log('네이버 스포츠 뉴스봇의 초기 설정 중입니다.');
+      setLastUpdateNewsTime(Utilities.formatDate(new Date(), 'GMT+9', 'yyyy.MM.dd HH:mm'));
       Logger.log('app 트리거를 생성합니다.');
       ScriptApp.newTrigger('app').timeBased().everyMinutes(5).create();
     }
@@ -181,13 +181,15 @@ function sendMessage(message: string, link: string) {
 }
 
 function isResponseData(data: unknown): data is ResponseData {
-  if (typeof data === 'object' &&
-      data !== null &&
-      'list' in data &&
-      'date' in data &&
-      'type' in data &&
-      'page' in data &&
-      'totalPages' in data) {
+  if (
+    typeof data === 'object' &&
+    data !== null &&
+    'list' in data &&
+    'date' in data &&
+    'type' in data &&
+    'page' in data &&
+    'totalPages' in data
+  ) {
     return true;
   }
   return false;
