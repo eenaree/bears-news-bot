@@ -27,36 +27,44 @@ function app() {
   const newsList = fetchBaseballTeamNews(MYTEAM);
 
   if (!lastUpdateNewsTime) {
-    const hasTrigger = checkTriggerExists('app');
-    if (!hasTrigger) {
-      Logger.log('네이버 스포츠 뉴스봇의 초기 설정 중입니다.');
-      setLastUpdateNewsTime(Utilities.formatDate(new Date(), 'GMT+9', 'yyyy.MM.dd HH:mm'));
-      Logger.log('app 트리거를 생성합니다.');
-      ScriptApp.newTrigger('app').timeBased().everyMinutes(5).create();
-    }
+    createTrigger();
     return;
   }
 
-  if (newsList) {
-    const latestNewsListAsc = getLatestNewsList(newsList.reverse(), lastUpdateNewsTime);
-    if (latestNewsListAsc.length > 0) {
-      Logger.log(`최신 뉴스: ${latestNewsListAsc.length}개 `);
+  if (!newsList) {
+    Logger.log('뉴스 목록을 가져오지 못했습니다.');
+    return;
+  }
 
-      if (DEBUG_MODE) {
-        latestNewsListAsc.forEach((news) => {
-          Logger.log(
-            `[${news.officeName.trim()}] ${news.title}\n${news.subContent}\n- 입력: ${
-              news.datetime
-            }\n- 조회수: ${news.totalCount}`
-          );
-        });
-      } else {
-        notifyNewsList(latestNewsListAsc);
-        Logger.log('최신 뉴스 항목을 모두 전달했습니다.');
-      }
-    } else {
-      Logger.log(`${lastUpdateNewsTime} 이후, 최신 뉴스가 없습니다. `);
-    }
+  const latestNewsListAsc = getLatestNewsList(newsList.reverse(), lastUpdateNewsTime);
+  if (latestNewsListAsc.length === 0) {
+    Logger.log(`${lastUpdateNewsTime} 이후, 최신 뉴스가 없습니다. `);
+    return;
+  }
+
+  Logger.log(`최신 뉴스: ${latestNewsListAsc.length}개 `);
+
+  if (DEBUG_MODE) {
+    latestNewsListAsc.forEach((news) => {
+      Logger.log(
+        `[${news.officeName.trim()}] ${news.title}\n${news.subContent}\n- 입력: ${
+          news.datetime
+        }\n- 조회수: ${news.totalCount}`
+      );
+    });
+  } else {
+    notifyNewsList(latestNewsListAsc);
+    Logger.log('최신 뉴스 항목을 모두 전달했습니다.');
+  }
+}
+
+function createTrigger() {
+  const hasTrigger = checkTriggerExists('app');
+  if (!hasTrigger) {
+    Logger.log('네이버 스포츠 뉴스봇의 초기 설정 중입니다.');
+    setLastUpdateNewsTime(Utilities.formatDate(new Date(), 'GMT+9', 'yyyy.MM.dd HH:mm'));
+    Logger.log('app 트리거를 생성합니다.');
+    ScriptApp.newTrigger('app').timeBased().everyMinutes(5).create();
   }
 }
 
