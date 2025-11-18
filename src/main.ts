@@ -24,13 +24,12 @@ function app() {
   }
 
   const lastUpdateNewsTime = getLastUpdateNewsTime();
-  const newsList = fetchBaseballTeamNews(MYTEAM);
-
   if (!lastUpdateNewsTime) {
-    createTrigger();
+    checkAndInitializeBot();
     return;
   }
 
+  const newsList = fetchBaseballTeamNews(MYTEAM);
   if (!newsList) {
     Logger.log('뉴스 목록을 가져오지 못했습니다.');
     return;
@@ -38,34 +37,76 @@ function app() {
 
   const latestNewsListAsc = getLatestNewsList(newsList.reverse(), lastUpdateNewsTime);
   if (latestNewsListAsc.length === 0) {
-    Logger.log(`${lastUpdateNewsTime} 이후, 최신 뉴스가 없습니다. `);
+    Logger.log(`${lastUpdateNewsTime} 이후, 최신 뉴스가 없습니다.`);
     return;
   }
-
   Logger.log(`최신 뉴스: ${latestNewsListAsc.length}개 `);
 
-  if (DEBUG_MODE) {
-    latestNewsListAsc.forEach((news) => {
-      Logger.log(
-        `[${news.officeName.trim()}] ${news.title}\n${news.subContent}\n- 입력: ${
-          news.datetime
-        }\n- 조회수: ${news.totalCount}`
-      );
-    });
-  } else {
-    notifyNewsList(latestNewsListAsc);
-    Logger.log('최신 뉴스 항목을 모두 전달했습니다.');
+  let postedCount = 0;
+  let latestNews: News | null = null;
+
+  for (const news of latestNewsListAsc) {
+    const result = processNews(news);
+
+    if (!result || result.error) break;
+    if (result.ok) {
+      latestNews = result.data;
+      postedCount++;
+    }
+  }
+
+  Logger.log(`총 ${postedCount}개의 뉴스를 게시했습니다.`);
+  if (latestNews) {
+    saveLastUpdateNews(latestNews);
   }
 }
 
-function createTrigger() {
+function processNews(news: News) {
+  const { title, officeName, url, oid, aid, totalCount } = news;
+
+  const newsUrl = url ?? createNewsUrl({ officeId: oid, articleId: aid });
+  const message = createNewsCardText({
+    officeName,
+    title,
+    totalCount,
+    url: newsUrl,
+  });
+
+  if (DEBUG_MODE) {
+    Logger.log(
+      `[${news.officeName.trim()}] ${news.title}\n${news.subContent}\n- 입력: ${
+        news.datetime
+      }\n- 조회수: ${news.totalCount}`
+    );
+  } else {
+    Logger.log(`[${officeName}] '${title}' 항목 게시중...`);
+    try {
+      sendMessage(message, newsUrl);
+      return { ok: true, data: news, error: false };
+    } catch (error) {
+      Logger.log(`[${officeName}] '${title}' 항목 게시중 에러가 발생했습니다.`);
+      return { ok: false, data: null, error: true };
+    }
+  }
+}
+
+function saveLastUpdateNews(news: News) {
+  setLastUpdateNewsOid(news.oid);
+  setLastUpdateNewsAid(news.aid);
+  setLastUpdateNewsTime(news.datetime);
+}
+
+function checkAndInitializeBot() {
   const hasTrigger = checkTriggerExists('app');
   if (!hasTrigger) {
     Logger.log('네이버 스포츠 뉴스봇의 초기 설정 중입니다.');
     setLastUpdateNewsTime(Utilities.formatDate(new Date(), 'GMT+9', 'yyyy.MM.dd HH:mm'));
-    Logger.log('app 트리거를 생성합니다.');
-    ScriptApp.newTrigger('app').timeBased().everyMinutes(5).create();
+    createTrigger('app');
   }
+}
+
+function createTrigger(fn: string) {
+  ScriptApp.newTrigger(fn).timeBased().everyMinutes(5).create();
 }
 
 function checkTriggerExists(triggerName: string) {
@@ -151,23 +192,6 @@ function createNewsCardText({
 
 function createNewsUrl({ officeId, articleId }: { officeId: string; articleId: string }) {
   return `https://m.sports.naver.com/kbaseball/article/${officeId}/${articleId}`;
-}
-
-function notifyNewsList(newsList: News[]) {
-  for (const news of newsList) {
-    Logger.log(`'${news.title}' 항목 게시중...`);
-    const newsUrl = news.url ?? createNewsUrl({ officeId: news.oid, articleId: news.aid });
-    const message = createNewsCardText({
-      officeName: news.officeName,
-      title: news.title,
-      totalCount: news.totalCount,
-      url: newsUrl,
-    });
-    sendMessage(message, newsUrl);
-    setLastUpdateNewsTime(news.datetime);
-    setLastUpdateNewsOid(news.oid);
-    setLastUpdateNewsAid(news.aid);
-  }
 }
 
 function sendMessage(message: string, link: string) {
