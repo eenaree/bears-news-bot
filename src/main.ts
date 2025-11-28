@@ -17,13 +17,17 @@ const KBO_TEAM = {
   SS: '삼성',
 } as const;
 
+const LAST_UPDATE_NEWS_AID = 'LAST_UPDATE_NEWS_AID';
+const LAST_UPDATE_NEWS_OID = 'LAST_UPDATE_NEWS_OID';
+const LAST_UPDATE_NEWS_TIME = 'LAST_UPDATE_NEWS_TIME';
+
 function app() {
   if (!KBO_TEAM[MYTEAM]) {
     Logger.log('현재 선택한 야구팀이 없습니다. 팀을 선택해주세요.');
     return;
   }
 
-  const lastUpdateNewsTime = getLastUpdateNewsTime();
+  const lastUpdateNewsTime = getProperty(LAST_UPDATE_NEWS_TIME);
   if (!lastUpdateNewsTime) {
     checkAndInitializeBot();
     return;
@@ -91,16 +95,19 @@ function processNews(news: News) {
 }
 
 function saveLastUpdateNews(news: News) {
-  setLastUpdateNewsOid(news.oid);
-  setLastUpdateNewsAid(news.aid);
-  setLastUpdateNewsTime(news.datetime);
+  setProperty(LAST_UPDATE_NEWS_AID, news.aid);
+  setProperty(LAST_UPDATE_NEWS_OID, news.oid);
+  setProperty(LAST_UPDATE_NEWS_TIME, news.datetime);
 }
 
 function checkAndInitializeBot() {
   const hasTrigger = checkTriggerExists('app');
   if (!hasTrigger) {
     Logger.log('네이버 스포츠 뉴스봇의 초기 설정 중입니다.');
-    setLastUpdateNewsTime(Utilities.formatDate(new Date(), 'GMT+9', 'yyyy.MM.dd HH:mm'));
+    setProperty(
+      LAST_UPDATE_NEWS_TIME,
+      Utilities.formatDate(new Date(), 'GMT+9', 'yyyy.MM.dd HH:mm')
+    );
     createTrigger('app');
   }
 }
@@ -124,8 +131,8 @@ function checkTriggerExists(triggerName: string) {
 }
 
 function getLatestNewsList(newsList: News[], lastUpdateNewsTime: string) {
-  const lastUpdateNewsOid = getLastUpdateNewsOid();
-  const lastUpdateNewsAid = getLastUpdateNewsAid();
+  const lastUpdateNewsOid = getProperty(LAST_UPDATE_NEWS_OID);
+  const lastUpdateNewsAid = getProperty(LAST_UPDATE_NEWS_AID);
 
   const lastUpdateNewsIndex = newsList.findIndex(
     (news) => news.oid === lastUpdateNewsOid && news.aid === lastUpdateNewsAid
@@ -136,28 +143,12 @@ function getLatestNewsList(newsList: News[], lastUpdateNewsTime: string) {
   return newsList.filter((news) => new Date(lastUpdateNewsTime) < new Date(news.datetime));
 }
 
-function getLastUpdateNewsTime() {
-  return PropertiesService.getScriptProperties().getProperty('LAST_UPDATE_NEWS_TIME');
+function getProperty(key: string) {
+  return PropertiesService.getScriptProperties().getProperty(key);
 }
 
-function setLastUpdateNewsTime(value: string) {
-  PropertiesService.getScriptProperties().setProperty('LAST_UPDATE_NEWS_TIME', value);
-}
-
-function getLastUpdateNewsOid() {
-  return PropertiesService.getScriptProperties().getProperty('LAST_UPDATE_NEWS_OID');
-}
-
-function getLastUpdateNewsAid() {
-  return PropertiesService.getScriptProperties().getProperty('LAST_UPDATE_NEWS_AID');
-}
-
-function setLastUpdateNewsOid(value: string) {
-  return PropertiesService.getScriptProperties().setProperty('LAST_UPDATE_NEWS_OID', value);
-}
-
-function setLastUpdateNewsAid(value: string) {
-  return PropertiesService.getScriptProperties().setProperty('LAST_UPDATE_NEWS_AID', value);
+function setProperty(key: string, value: string) {
+  PropertiesService.getScriptProperties().setProperty(key, value);
 }
 
 function fetchBaseballTeamNews(team: keyof typeof KBO_TEAM) {
