@@ -153,7 +153,7 @@ function setProperty(key: string, value: string) {
 
 function fetchBaseballTeamNews(team: keyof typeof KBO_TEAM) {
   try {
-    const url = `https://sports.news.naver.com/kbaseball/news/list?type=team&team=${team}&isphoto=N`;
+    const url = `https://sports.news.naver.com/kbaseball/news/list?type=latest&team=${team}&isphoto=N`;
     const response = UrlFetchApp.fetch(url, {
       contentType: 'application/json',
     });
