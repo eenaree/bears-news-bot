@@ -22,59 +22,63 @@ const LAST_UPDATE_NEWS_OID = 'LAST_UPDATE_NEWS_OID';
 const LAST_UPDATE_NEWS_TIME = 'LAST_UPDATE_NEWS_TIME';
 
 function app() {
-  if (!KBO_TEAM[MYTEAM]) {
+  const selectedTeam = MYTEAM;
+  if (!KBO_TEAM[selectedTeam]) {
     Logger.log('현재 선택한 야구팀이 없습니다. 팀을 선택해주세요.');
     return;
   }
 
-  const lastUpdateNewsTime = getProperty(LAST_UPDATE_NEWS_TIME);
-  const lastUpdateNewsOid = getProperty(LAST_UPDATE_NEWS_OID);
-  const lastUpdateNewsAid = getProperty(LAST_UPDATE_NEWS_AID);
-  if (!(lastUpdateNewsTime && lastUpdateNewsOid && lastUpdateNewsAid)) {
+  const lastProcessedNewsTime = getProperty(LAST_UPDATE_NEWS_TIME);
+  const lastProcessedNewsOid = getProperty(LAST_UPDATE_NEWS_OID);
+  const lastProcessedNewsAid = getProperty(LAST_UPDATE_NEWS_AID);
+  if (!(lastProcessedNewsTime && lastProcessedNewsOid && lastProcessedNewsAid)) {
     checkAndInitializeBot();
     return;
   }
 
-  const newsList = fetchBaseballTeamNews(MYTEAM);
-  if (!newsList) {
+  const fetchedTeamNewsList = fetchBaseballTeamNews(MYTEAM);
+  if (!fetchedTeamNewsList) {
     Logger.log('뉴스 목록을 가져오지 못했습니다.');
     return;
   }
 
-  const lastUpdateNews = {
-    oid: lastUpdateNewsOid,
-    aid: lastUpdateNewsAid,
-    datetime: lastUpdateNewsTime,
+  const lastProcessedNewsCursor = {
+    oid: lastProcessedNewsOid,
+    aid: lastProcessedNewsAid,
+    datetime: lastProcessedNewsTime,
   };
-  const latestNewsListAsc = getLatestNewsList(newsList.reverse(), lastUpdateNews);
-  if (latestNewsListAsc.length === 0) {
-    Logger.log(`${lastUpdateNewsTime} 이후, 최신 뉴스가 없습니다.`);
+  const unprocessedTeamNewsAsc = getLatestNewsList(
+    fetchedTeamNewsList.reverse(),
+    lastProcessedNewsCursor
+  );
+  if (unprocessedTeamNewsAsc.length === 0) {
+    Logger.log(`${lastProcessedNewsTime} 이후, 최신 뉴스가 없습니다.`);
     return;
   }
-  Logger.log(`최신 뉴스: ${latestNewsListAsc.length}개 `);
+  Logger.log(`최신 뉴스: ${unprocessedTeamNewsAsc.length}개 `);
 
   let postedCount = 0;
-  let latestNews: News | null = null;
+  let lastProcessedNews: News | null = null;
 
-  for (const news of latestNewsListAsc) {
+  for (const news of unprocessedTeamNewsAsc) {
     // 종합 기사 제외
     if (news.title.includes('(종합)')) {
       Logger.log(`[${news.officeName}] '${news.title}' 항목은 종합 기사이므로 건너뜁니다.`);
-      latestNews = news;
+      lastProcessedNews = news;
       continue;
     }
     const result = processNews(news);
 
     if (!result || result.error) break;
     if (result.ok) {
-      latestNews = result.data;
+      lastProcessedNews = result.data;
       postedCount++;
     }
   }
 
   Logger.log(`총 ${postedCount}개의 뉴스를 게시했습니다.`);
-  if (latestNews) {
-    saveLastUpdateNews(latestNews);
+  if (lastProcessedNews) {
+    saveLastUpdateNews(lastProcessedNews);
   }
 }
 
