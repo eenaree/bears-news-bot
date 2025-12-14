@@ -28,7 +28,9 @@ function app() {
   }
 
   const lastUpdateNewsTime = getProperty(LAST_UPDATE_NEWS_TIME);
-  if (!lastUpdateNewsTime) {
+  const lastUpdateNewsOid = getProperty(LAST_UPDATE_NEWS_OID);
+  const lastUpdateNewsAid = getProperty(LAST_UPDATE_NEWS_AID);
+  if (!(lastUpdateNewsTime && lastUpdateNewsOid && lastUpdateNewsAid)) {
     checkAndInitializeBot();
     return;
   }
@@ -39,7 +41,12 @@ function app() {
     return;
   }
 
-  const latestNewsListAsc = getLatestNewsList(newsList.reverse(), lastUpdateNewsTime);
+  const lastUpdateNews = {
+    oid: lastUpdateNewsOid,
+    aid: lastUpdateNewsAid,
+    datetime: lastUpdateNewsTime,
+  };
+  const latestNewsListAsc = getLatestNewsList(newsList.reverse(), lastUpdateNews);
   if (latestNewsListAsc.length === 0) {
     Logger.log(`${lastUpdateNewsTime} 이후, 최신 뉴스가 없습니다.`);
     return;
@@ -130,17 +137,17 @@ function checkTriggerExists(triggerName: string) {
   return hasTrigger;
 }
 
-function getLatestNewsList(newsList: News[], lastUpdateNewsTime: string) {
-  const lastUpdateNewsOid = getProperty(LAST_UPDATE_NEWS_OID);
-  const lastUpdateNewsAid = getProperty(LAST_UPDATE_NEWS_AID);
-
+function getLatestNewsList(
+  newsList: News[],
+  lastUpdateNews: { oid: string; aid: string; datetime: string }
+) {
   const lastUpdateNewsIndex = newsList.findIndex(
-    (news) => news.oid === lastUpdateNewsOid && news.aid === lastUpdateNewsAid
+    (news) => news.oid === lastUpdateNews.oid && news.aid === lastUpdateNews.aid
   );
   if (lastUpdateNewsIndex !== -1) {
     return newsList.slice(lastUpdateNewsIndex + 1);
   }
-  return newsList.filter((news) => new Date(lastUpdateNewsTime) < new Date(news.datetime));
+  return newsList.filter((news) => new Date(lastUpdateNews.datetime) < new Date(news.datetime));
 }
 
 function getProperty(key: string) {
