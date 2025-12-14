@@ -57,6 +57,12 @@ function app() {
   let latestNews: News | null = null;
 
   for (const news of latestNewsListAsc) {
+    // 종합 기사 제외
+    if (news.title.includes('(종합)')) {
+      Logger.log(`[${news.officeName}] '${news.title}' 항목은 종합 기사이므로 건너뜁니다.`);
+      latestNews = news;
+      continue;
+    }
     const result = processNews(news);
 
     if (!result || result.error) break;
