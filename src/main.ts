@@ -121,11 +121,13 @@ function checkAndInitializeBot() {
   const hasTrigger = checkTriggerExists('app');
   if (!hasTrigger) {
     Logger.log('네이버 스포츠 뉴스봇의 초기 설정 중입니다.');
-    setProperty(
-      LAST_UPDATE_NEWS_TIME,
-      Utilities.formatDate(new Date(), 'GMT+9', 'yyyy.MM.dd HH:mm')
-    );
-    createTrigger('app');
+    const fetchedTeamNewsList = fetchBaseballTeamNews(MYTEAM);
+    if (fetchedTeamNewsList && fetchedTeamNewsList.length > 0) {
+      saveLastUpdateNews(fetchedTeamNewsList[0]);
+      createTrigger('app');
+    } else {
+      Logger.log('초기화에 필요한 뉴스 데이터를 가져오지 못했습니다.');
+    }
   }
 }
 
