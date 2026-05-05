@@ -181,8 +181,7 @@ function fetchBaseballTeamNews(team: keyof typeof KBO_TEAM) {
       return data.list;
     }
   } catch (error) {
-    Logger.log(error);
-    throw new Error('뉴스 데이터를 가져오는 도중 에러가 발생했습니다.');
+    throw new Error(`뉴스 데이터를 가져오는 도중 에러가 발생했습니다.\n${error}`);
   }
 }
 
@@ -205,20 +204,29 @@ function createNewsUrl({ officeId, articleId }: { officeId: string; articleId: s
 }
 
 function sendMessage(message: string, link: string) {
-  try {
-    const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-    const params: GoogleAppsScript.URL_Fetch.URLFetchRequestOptions = {
-      method: 'post',
-      payload: {
-        chat_id: `${TELEGRAM_CHAT_ID}`,
-        text: message,
-        link_preview_options: JSON.stringify({ url: link, prefer_small_media: true }),
-      },
-    };
-    UrlFetchApp.fetch(url, params);
-  } catch (error) {
-    Logger.log(error);
-    throw new Error('텔레그램 메세지를 전송하는데 실패했습니다.');
+  const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+  const params: GoogleAppsScript.URL_Fetch.URLFetchRequestOptions = {
+    method: 'post',
+    payload: {
+      chat_id: `${TELEGRAM_CHAT_ID}`,
+      text: message,
+      link_preview_options: JSON.stringify({ url: link, prefer_small_media: true }),
+    },
+    muteHttpExceptions: true,
+  };
+  const response = UrlFetchApp.fetch(url, params);
+  const responseCode = response.getResponseCode();
+  const result = JSON.parse(response.getContentText());
+  // 200번대(성공) 혹은 504(타임아웃이지만 실제론 보내졌을 가능성 큼)인 경우 체크
+  if (responseCode >= 200 && responseCode < 300) {
+    return response;
+  } else if (responseCode === 502 || responseCode === 504) {
+    console.warn(
+      `Gateway Timeout 발생 (Code: ${responseCode}). 일단 성공으로 처리하고 넘어갑니다.`
+    );
+    return response;
+  } else if (!result.ok) {
+    throw new Error(`응답 코드: ${responseCode}, 텔레그램 메세지 전송 실패: ${result}`);
   }
 }
 
