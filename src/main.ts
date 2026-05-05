@@ -83,8 +83,8 @@ function app() {
 }
 
 function processNews(news: News) {
-  const { title, officeName, url, oid, aid, totalCount } = news;
-
+  const { title, officeName: _officeName, url, oid, aid, totalCount, subContent, datetime } = news;
+  const officeName = _officeName.trim();
   const newsUrl = url ?? createNewsUrl({ officeId: oid, articleId: aid });
   const message = createNewsCardText({
     officeName,
@@ -95,9 +95,7 @@ function processNews(news: News) {
 
   if (DEBUG_MODE) {
     Logger.log(
-      `[${news.officeName.trim()}] ${news.title}\n${news.subContent}\n- 입력: ${
-        news.datetime
-      }\n- 조회수: ${news.totalCount}`
+      `[${officeName}] ${title}\n${subContent}\n- 입력: ${datetime}\n- 조회수: ${totalCount}`
     );
   } else {
     Logger.log(`[${officeName}] '${title}' 항목 게시중...`);
@@ -196,7 +194,7 @@ function createNewsCardText({
   totalCount: number;
   url: string;
 }) {
-  return `[${officeName.trim()}] <a href="${url}"><b>${title}</b></a>`;
+  return `[${officeName}] <a href="${url}"><b>${title}</b></a>`;
 }
 
 function createNewsUrl({ officeId, articleId }: { officeId: string; articleId: string }) {
