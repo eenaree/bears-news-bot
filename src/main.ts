@@ -196,7 +196,7 @@ function createNewsCardText({
   totalCount: number;
   url: string;
 }) {
-  return `[${officeName.trim()}] ${title}\n- 조회수: ${totalCount}\n\n${url}`;
+  return `[${officeName.trim()}] <a href="${url}"><b>${title}</b></a>`;
 }
 
 function createNewsUrl({ officeId, articleId }: { officeId: string; articleId: string }) {
@@ -210,6 +210,7 @@ function sendMessage(message: string, link: string) {
     payload: {
       chat_id: `${TELEGRAM_CHAT_ID}`,
       text: message,
+      parse_mode: 'HTML',
       link_preview_options: JSON.stringify({ url: link, prefer_small_media: true }),
     },
     muteHttpExceptions: true,
