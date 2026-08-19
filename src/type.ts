@@ -1,21 +1,19 @@
 export type News = {
   oid: string;
   aid: string;
-  officeName: string;
+  sourceName: string;
   title: string;
   subContent: string;
   thumbnail: string;
-  datetime: string;
+  dateTime: string;
   url: string | null;
   sectionName: string;
   type: string;
-  totalCount: number;
+  count: number;
 };
 
 export type ResponseData = {
-  list: News[];
-  date: string;
-  type: string;
+  newsList: News[];
   page: number;
   totalPages: number;
 };

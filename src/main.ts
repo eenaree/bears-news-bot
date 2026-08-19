@@ -45,7 +45,7 @@ function app() {
   const lastProcessedNewsCursor = {
     oid: lastProcessedNewsOid,
     aid: lastProcessedNewsAid,
-    datetime: lastProcessedNewsTime,
+    dateTime: lastProcessedNewsTime,
   };
   const unprocessedTeamNewsAsc = getLatestNewsList(
     fetchedTeamNewsList.reverse(),
@@ -63,7 +63,7 @@ function app() {
   for (const news of unprocessedTeamNewsAsc) {
     // 종합 기사 제외
     if (news.title.includes('(종합)')) {
-      Logger.log(`[${news.officeName}] '${news.title}' 항목은 종합 기사이므로 건너뜁니다.`);
+      Logger.log(`[${news.sourceName}] '${news.title}' 항목은 종합 기사이므로 건너뜁니다.`);
       lastProcessedNews = news;
       continue;
     }
@@ -83,27 +83,25 @@ function app() {
 }
 
 function processNews(news: News) {
-  const { title, officeName: _officeName, url, oid, aid, totalCount, subContent, datetime } = news;
-  const officeName = _officeName.trim();
+  const { title, sourceName: _sourceName, url, oid, aid, count, subContent, dateTime } = news;
+  const sourceName = _sourceName.trim();
   const newsUrl = url ?? createNewsUrl({ officeId: oid, articleId: aid });
   const message = createNewsCardText({
-    officeName,
+    sourceName,
     title,
-    totalCount,
+    count,
     url: newsUrl,
   });
 
   if (DEBUG_MODE) {
-    Logger.log(
-      `[${officeName}] ${title}\n${subContent}\n- 입력: ${datetime}\n- 조회수: ${totalCount}`
-    );
+    Logger.log(`[${sourceName}] ${title}\n${subContent}\n- 입력: ${dateTime}\n- 조회수: ${count}`);
   } else {
-    Logger.log(`[${officeName}] '${title}' 항목 게시중...`);
+    Logger.log(`[${sourceName}] '${title}' 항목 게시중...`);
     try {
       sendMessage(message, newsUrl);
       return { ok: true, data: news, error: false };
     } catch (error) {
-      Logger.log(`[${officeName}] '${title}' 항목 게시중 에러가 발생했습니다.`);
+      Logger.log(`[${sourceName}] '${title}' 항목 게시중 에러가 발생했습니다.`);
       return { ok: false, data: null, error: true };
     }
   }
@@ -112,7 +110,7 @@ function processNews(news: News) {
 function saveLastUpdateNews(news: News) {
   setProperty(LAST_UPDATE_NEWS_AID, news.aid);
   setProperty(LAST_UPDATE_NEWS_OID, news.oid);
-  setProperty(LAST_UPDATE_NEWS_TIME, news.datetime);
+  setProperty(LAST_UPDATE_NEWS_TIME, news.dateTime);
 }
 
 function checkAndInitializeBot() {
@@ -149,7 +147,7 @@ function checkTriggerExists(triggerName: string) {
 
 function getLatestNewsList(
   newsList: News[],
-  lastUpdateNews: { oid: string; aid: string; datetime: string }
+  lastUpdateNews: { oid: string; aid: string; dateTime: string }
 ) {
   const lastUpdateNewsIndex = newsList.findIndex(
     (news) => news.oid === lastUpdateNews.oid && news.aid === lastUpdateNews.aid
@@ -157,7 +155,7 @@ function getLatestNewsList(
   if (lastUpdateNewsIndex !== -1) {
     return newsList.slice(lastUpdateNewsIndex + 1);
   }
-  return newsList.filter((news) => new Date(lastUpdateNews.datetime) < new Date(news.datetime));
+  return newsList.filter((news) => new Date(lastUpdateNews.dateTime) < new Date(news.dateTime));
 }
 
 function getProperty(key: string) {
@@ -170,13 +168,15 @@ function setProperty(key: string, value: string) {
 
 function fetchBaseballTeamNews(team: keyof typeof KBO_TEAM) {
   try {
-    const url = `https://sports.news.naver.com/kbo/news/list?type=latest&team=${team}&isphoto=N`;
+    const url = `https://api-gw.sports.naver.com/news/articles/kbo?sort=latest&page=1&pageSize=40&isPhoto=N&team=${team}`;
     const response = UrlFetchApp.fetch(url, {
       contentType: 'application/json',
     });
     const data = JSON.parse(response.getContentText());
-    if (isResponseData(data)) {
-      return data.list;
+    if (isResponseData(data.result)) {
+      return data.result.newsList.sort(
+        (a: News, b: News) => new Date(a.dateTime).getTime() - new Date(b.dateTime).getTime()
+      );
     }
   } catch (error) {
     throw new Error(`뉴스 데이터를 가져오는 도중 에러가 발생했습니다.\n${error}`);
@@ -184,17 +184,17 @@ function fetchBaseballTeamNews(team: keyof typeof KBO_TEAM) {
 }
 
 function createNewsCardText({
-  officeName,
+  sourceName,
   title,
-  totalCount,
+  count,
   url,
 }: {
-  officeName: string;
+  sourceName: string;
   title: string;
-  totalCount: number;
+  count: number;
   url: string;
 }) {
-  return `[${officeName}] <a href="${url}"><b>${title}</b></a>`;
+  return `[${sourceName}] <a href="${url}"><b>${title}</b></a>`;
 }
 
 function createNewsUrl({ officeId, articleId }: { officeId: string; articleId: string }) {
@@ -233,11 +233,9 @@ function isResponseData(data: unknown): data is ResponseData {
   if (
     typeof data === 'object' &&
     data !== null &&
-    'list' in data &&
-    'date' in data &&
+    'newsList' in data &&
     'type' in data &&
-    'page' in data &&
-    'totalPages' in data
+    'totalCount' in data
   ) {
     return true;
   }
